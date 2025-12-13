@@ -71,8 +71,8 @@ GND → GND (общий для всех компонентов)
 
 ### 1. Клонирование репозитория
 ```bash
-git clone https://github.com/YOUR_USERNAME/esp32-cam-feeder.git
-cd esp32-cam-feeder
+git clone https://github.com/anmaslov/feeder.git
+cd feeder
 ```
 
 ### 2. Настройка конфигурации

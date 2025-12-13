@@ -1,87 +1,89 @@
-# 🐾 Автокормушка для питомцев на ESP32-CAM
+# 🐾 ESP32-CAM Pet Feeder
 
-Умная автоматическая кормушка для домашних животных на базе ESP32-CAM с веб-интерфейсом, расписанием, MQTT интеграцией и OTA обновлением.
+Smart automatic pet feeder based on ESP32-CAM with web interface, scheduling, MQTT integration, and OTA updates.
 
 ![ESP32-CAM](https://img.shields.io/badge/ESP32-CAM-blue)
 ![PlatformIO](https://img.shields.io/badge/PlatformIO-Compatible-orange)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![MQTT](https://img.shields.io/badge/MQTT-Integrated-green)
 
-## 📋 Возможности
+🇷🇺 [Русская версия](README_RU.md)
 
-### Основные функции:
-- ✅ **Управление кнопкой**: короткий клик для кормления, удержание для калибровки
-- ✅ **RGB LED индикация**: WS2812B лента (2 LED) с анимациями
-- ✅ **Сохранение настроек**: все параметры в энергонезависимой памяти
-- ✅ **WiFi подключение**: автоматическое подключение к домашней сети
-- ✅ **Веб-интерфейс**: управление через браузер
-- ✅ **Расписание**: до 5 автоматических кормлений в день
-- ✅ **NTP синхронизация**: точное время из интернета
-- ✅ **OTA обновление**: обновление прошивки по воздуху
-- ✅ **MQTT интеграция**: логи, управление, мониторинг
+## 📋 Features
 
-### MQTT возможности (NEW! 🆕):
-- 📡 **Удаленные логи**: вся отладка через MQTT
-- 📊 **Умный мониторинг**: аптайм + дата/время в одном сообщении (каждую минуту)
-- 🎮 **Удаленное кормление**: команды через MQTT
-- 📱 **Home Assistant**: полная интеграция с binary sensor
-- 🔔 **Статусы в реальном времени**: JSON с информацией о кормлении
+### Core Functions:
+- ✅ **Button Control**: short press to feed, long press for calibration
+- ✅ **RGB LED Indication**: WS2812B strip (2 LEDs) with animations
+- ✅ **Settings Storage**: all parameters saved in non-volatile memory
+- ✅ **WiFi Connection**: automatic connection to home network
+- ✅ **Web Interface**: browser-based control
+- ✅ **Scheduling**: up to 5 automatic feedings per day
+- ✅ **NTP Sync**: accurate time from the internet
+- ✅ **OTA Updates**: over-the-air firmware updates
+- ✅ **MQTT Integration**: logs, control, monitoring
 
-## 🛠 Компоненты
+### MQTT Features:
+- 📡 **Remote Logs**: all debugging via MQTT
+- 📊 **Smart Monitoring**: uptime + date/time in one message (every minute)
+- 🎮 **Remote Feeding**: commands via MQTT
+- 📱 **Home Assistant**: full integration with binary sensor
+- 🔔 **Real-time Status**: JSON with feeding information
 
-| Компонент | Описание |
-|-----------|----------|
-| ESP32-CAM | Основная плата |
-| Шаговый двигатель 28BYJ-48 | Двигатель для шнека |
-| Драйвер ULN2003 | Драйвер для управления двигателем |
-| WS2812B LED лента | 2 адресных светодиода |
-| Кнопка | Тактовая кнопка для управления |
-| Блок питания 5V/2A | Питание для системы |
+## 🛠 Components
 
-## 📌 Схема подключения
+| Component | Description |
+|-----------|-------------|
+| ESP32-CAM | Main board |
+| 28BYJ-48 Stepper Motor | Motor for auger |
+| ULN2003 Driver | Motor driver |
+| WS2812B LED Strip | 2 addressable LEDs |
+| Button | Tactile button for control |
+| 5V/2A Power Supply | System power |
 
-### ESP32-CAM → Драйвер мотора (ULN2003)
+## 📌 Wiring Diagram
+
+### ESP32-CAM → Motor Driver (ULN2003)
 ```
-GPIO 12 (IN1) → Фаза 1
-GPIO 13 (IN2) → Фаза 2
-GPIO 15 (IN3) → Фаза 3
-GPIO 14 (IN4) → Фаза 4
-```
-
-### Кнопка
-```
-GPIO 2 → Один контакт кнопки
-GND    → Другой контакт кнопки
+GPIO 12 (IN1) → Phase 1
+GPIO 13 (IN2) → Phase 2
+GPIO 15 (IN3) → Phase 3
+GPIO 14 (IN4) → Phase 4
 ```
 
-### LED лента WS2812B
+### Button
+```
+GPIO 2 → One button contact
+GND    → Other button contact
+```
+
+### WS2812B LED Strip
 ```
 GPIO 16 → DIN (Data In)
 5V      → VCC
 GND     → GND
 ```
 
-### Питание
+### Power
 ```
-5V  → VCC (на драйвере и ESP32-CAM)
-GND → GND (общий для всех компонентов)
+5V  → VCC (driver and ESP32-CAM)
+GND → GND (common for all components)
 ```
 
-## 🚀 Установка и настройка
+## 🚀 Installation and Setup
 
-### 1. Клонирование репозитория
+### 1. Clone Repository
 ```bash
 git clone https://github.com/anmaslov/feeder.git
 cd feeder
 ```
 
-### 2. Настройка конфигурации
-Скопируйте файл примера и заполните своими данными:
+### 2. Configuration
+Copy the example file and fill in your data:
 ```bash
 cp .env.example .env
 ```
 
-Отредактируйте `.env` файл:
+Edit the `.env` file:
 ```bash
 # WiFi
 WIFI_SSID=your_wifi_ssid
@@ -97,156 +99,156 @@ MQTT_PASSWORD=mqtt_password
 ESP_IP=192.168.1.100
 ```
 
-### 3. Загрузка через USB
+### 3. USB Upload
 ```bash
-# Раскомментируйте в platformio.ini USB загрузку, если используете кабель
+# Uncomment USB upload in platformio.ini if using cable
 platformio run --target upload
 ```
 
-### 4. Загрузка файловой системы (веб-интерфейс)
+### 4. Filesystem Upload (web interface)
 ```bash
 platformio run --target uploadfs
 ```
 
-### 5. OTA обновление (после первой загрузки)
+### 5. OTA Update (after first upload)
 ```bash
 platformio run --target upload --upload-port ESP_IP_FROM_ENV
 ```
 
-## 📖 Использование
+## 📖 Usage
 
-### Световая индикация
+### LED Indication
 
-| Индикация | Значение |
-|-----------|----------|
-| 3 мигания при старте | Плата загружена |
-| 5 быстрых миганий | WiFi подключен |
-| Светодиод горит постоянно | Идёт кормление или калибровка |
-| 2 быстрых мигания | Настройки сохранены |
-| Мигание во время OTA | Идёт обновление прошивки |
+| Indication | Meaning |
+|------------|---------|
+| 3 blinks at startup | Board loaded |
+| 5 fast blinks | WiFi connected |
+| LED constantly on | Feeding or calibration in progress |
+| 2 fast blinks | Settings saved |
+| Blinking during OTA | Firmware update in progress |
 
-### Управление кнопкой
+### Button Control
 
-#### Короткий клик (< 0.5 сек)
-- Запускает процесс кормления
-- Мотор выдаёт сохранённую порцию корма
-- Светодиод горит во время работы
+#### Short Press (< 0.5 sec)
+- Starts feeding process
+- Motor dispenses saved portion
+- LED on during operation
 
-#### Удержание (> 0.5 сек)
-- Начинается калибровка порции
-- Светодиод загорается
-- Мотор крутится пока держите кнопку
-- Отпустите когда нужное количество корма выдано
-- Новый размер порции автоматически сохраняется
-- 2 быстрых мигания подтверждают сохранение
+#### Long Press (> 0.5 sec)
+- Starts portion calibration
+- LED turns on
+- Motor runs while button held
+- Release when desired amount dispensed
+- New portion size automatically saved
+- 2 fast blinks confirm save
 
-## 🔧 Настройка параметров
+## 🔧 Parameter Settings
 
-В файле `src/main.cpp` можно изменить:
+In `src/main.cpp` you can modify:
 
 ```cpp
-#define FEED_SPEED 3000     // Скорость мотора (мкс между шагами)
-#define STEPS_FRW 19        // Шаги вперёд
-#define STEPS_BKW 12        // Шаги назад (предотвращает застревание)
+#define FEED_SPEED 3000     // Motor speed (µs between steps)
+#define STEPS_FRW 19        // Steps forward
+#define STEPS_BKW 12        // Steps backward (prevents jamming)
 ```
 
-## 📁 Структура проекта
+## 📁 Project Structure
 
 ```
-esp32-cam-feeder/
+feeder/
 ├── src/
-│   ├── main.cpp           # Основной код
-│   ├── feeder.cpp         # Управление мотором и LED
-│   ├── schedule.cpp       # Логика расписания
-│   ├── mqtt_handler.cpp   # MQTT клиент
+│   ├── main.cpp           # Main code
+│   ├── feeder.cpp         # Motor and LED control
+│   ├── schedule.cpp       # Schedule logic
+│   ├── mqtt_handler.cpp   # MQTT client
 │   ├── web_server.cpp     # HTTP API
-│   └── SimpleButton.h     # Библиотека для работы с кнопкой
+│   └── SimpleButton.h     # Button library
 ├── include/
-│   ├── config.h           # Конфигурация (пины, таймеры)
-│   ├── feeder.h           # Заголовок feeder
-│   ├── schedule.h         # Заголовок schedule
-│   ├── mqtt_handler.h     # Заголовок MQTT
-│   └── web_server.h       # Заголовок web server
+│   ├── config.h           # Configuration (pins, timers)
+│   ├── feeder.h           # Feeder header
+│   ├── schedule.h         # Schedule header
+│   ├── mqtt_handler.h     # MQTT header
+│   └── web_server.h       # Web server header
 ├── data/
-│   ├── config.json        # Настройки (расписание, порции)
-│   └── index.html         # Веб-интерфейс
-├── .env.example           # Пример переменных окружения
-├── load_env.py            # Скрипт загрузки .env
-├── platformio.ini         # Конфигурация PlatformIO
-├── LOVELACE_CARD.yaml     # Карточка для Home Assistant
+│   ├── config.json        # Settings (schedule, portions)
+│   └── index.html         # Web interface
+├── .env.example           # Environment variables example
+├── load_env.py            # .env loading script
+├── platformio.ini         # PlatformIO configuration
+├── LOVELACE_CARD.yaml     # Home Assistant card
 ├── .gitignore
 ├── LICENSE
 └── README.md
 ```
 
-## 🌐 OTA обновление
+## 🌐 OTA Update
 
-### Через PlatformIO
-Добавьте в `platformio.ini`:
+### Via PlatformIO
+Add to `platformio.ini`:
 ```ini
 upload_protocol = espota
 upload_port = feeder-cam.local
 ```
 
-### Через Arduino IDE
-1. Меню: Инструменты → Порт
-2. Выберите `feeder-cam at 192.168.x.x`
-3. Загрузите скетч
+### Via Arduino IDE
+1. Menu: Tools → Port
+2. Select `feeder-cam at 192.168.x.x`
+3. Upload sketch
 
-### С паролем (опционально)
-Раскомментируйте в `main.cpp`:
+### With Password (optional)
+Uncomment in `main.cpp`:
 ```cpp
 ArduinoOTA.setPassword("admin");
 ```
 
-## 🔍 Отладка
+## 🔍 Debugging
 
-Подключитесь к Serial Monitor (115200 baud) для просмотра логов:
+Connect to Serial Monitor (115200 baud) to view logs:
 ```
-Автокормушка ESP32-CAM готова!
-Загружена порция: 100
-Подключение к WiFi.....
-WiFi подключен!
-IP адрес: 192.168.x.x
-OTA готов
-MQTT подключен
+ESP32-CAM Pet Feeder ready!
+Loaded portion: 100
+Connecting to WiFi.....
+WiFi connected!
+IP address: 192.168.x.x
+OTA ready
+MQTT connected
 Hostname: feeder-cam
 ```
 
-## 📡 MQTT Интеграция
+## 📡 MQTT Integration
 
-### Быстрый старт:
+### Quick Start:
 
-Кормушка автоматически подключается к MQTT брокеру (настройки из `.env`):
-- **Сервер:** `your_mqtt_server:1883`
-- **Логин/пароль:** из файла `.env`
+Feeder automatically connects to MQTT broker (settings from `.env`):
+- **Server:** `your_mqtt_server:1883`
+- **Login/password:** from `.env` file
 
-### Топики:
+### Topics:
 
-| Топик | Тип | Описание |
-|-------|-----|----------|
-| `feeder/logs` | Публикация | Все логи и отладка |
-| `feeder/uptime` | Публикация | Аптайм + дата/время (каждую минуту) |
-| `feeder/feed` | Подписка | Команда покормить |
-| `feeder/status` | Публикация | Статус кормления (JSON) |
-| `feeder/availability` | Публикация | online/offline (deprecated) |
+| Topic | Type | Description |
+|-------|------|-------------|
+| `feeder/logs` | Publish | All logs and debugging |
+| `feeder/uptime` | Publish | Uptime + date/time (every minute) |
+| `feeder/feed` | Subscribe | Feed command |
+| `feeder/status` | Publish | Feeding status (JSON) |
+| `feeder/availability` | Publish | online/offline (deprecated) |
 
-> **Новинка v3.1.1:** Топик `feeder/uptime` теперь включает дату и время последней отправки!  
-> Формат: `Uptime: 0 дней 1:23:45 | Last: 07.12.2025 14:30:15`
+> **New in v3.1.1:** Topic `feeder/uptime` now includes date and time of last send!  
+> Format: `Uptime: 0 days 1:23:45 | Last: 07.12.2025 14:30:15`
 
-### Примеры команд:
+### Command Examples:
 
 ```bash
-# Просмотр логов
+# View logs
 mosquitto_sub -h YOUR_MQTT_SERVER -u YOUR_USER -P YOUR_PASSWORD -t "feeder/logs"
 
-# Просмотр uptime с датой/временем (NEW!)
+# View uptime with date/time
 mosquitto_sub -h YOUR_MQTT_SERVER -u YOUR_USER -P YOUR_PASSWORD -t "feeder/uptime"
 
-# Покормить
+# Feed
 mosquitto_pub -h YOUR_MQTT_SERVER -u YOUR_USER -P YOUR_PASSWORD -t "feeder/feed" -m "100"
 
-# Проверить онлайн (по uptime)
+# Check online (by uptime)
 mosquitto_sub -h YOUR_MQTT_SERVER -u YOUR_USER -P YOUR_PASSWORD -t "feeder/uptime" -C 1 -W 150
 ```
 
@@ -255,78 +257,61 @@ mosquitto_sub -h YOUR_MQTT_SERVER -u YOUR_USER -P YOUR_PASSWORD -t "feeder/uptim
 ```yaml
 binary_sensor:
   - platform: mqtt
-    name: "Кормушка онлайн"
+    name: "Feeder Online"
     state_topic: "feeder/uptime"
     payload_on: "Uptime"
     device_class: connectivity
-    expire_after: 150  # Оффлайн если нет сообщения 2.5 минуты
+    expire_after: 150  # Offline if no message for 2.5 minutes
 
 mqtt:
   button:
-    - name: "Покормить кота"
+    - name: "Feed Cat"
       command_topic: "feeder/feed"
       payload_press: "15"
 ```
 
-**Подробнее:** [MQTT_UPTIME_V2.md](MQTT_UPTIME_V2.md) | [MQTT_QUICKSTART.md](MQTT_QUICKSTART.md)
+## 🐛 Troubleshooting
 
-## 🐛 Решение проблем
+### Motor doesn't spin or hums
+- Check phase connection correctness
+- Try swapping wires on driver
+- Increase `FEED_SPEED` (slow down motor)
 
-### Мотор не крутится или гудит
-- Проверьте правильность подключения фаз
-- Попробуйте поменять местами провода на драйвере
-- Увеличьте `FEED_SPEED` (замедлить мотор)
+### WiFi won't connect
+- Check SSID and password correctness
+- Ensure router supports 2.4 GHz (ESP32 doesn't work with 5GHz)
+- Check WiFi signal strength
 
-### WiFi не подключается
-- Проверьте правильность SSID и пароля
-- Убедитесь что роутер поддерживает 2.4 GHz (ESP32 не работает с 5GHz)
-- Проверьте силу сигнала WiFi
+### LED doesn't blink
+- GPIO 4 may conflict with SD card
+- Try changing `LED_PIN` to 33 (built-in LED)
 
-### Светодиод не мигает
-- GPIO 4 может конфликтовать с SD картой
-- Попробуйте изменить `LED_PIN` на 33 (встроенный LED)
+### OTA doesn't work
+- Ensure ESP32 and computer are on same network
+- Check that port 3232 is not blocked by firewall
+- Try using IP address instead of hostname
 
-### OTA не работает
-- Убедитесь что ESP32 и компьютер в одной сети
-- Проверьте что порт 3232 не заблокирован фаерволом
-- Попробуйте использовать IP адрес вместо hostname
+### MQTT won't connect
+- Check broker is running: `systemctl status mosquitto`
+- Verify IP address and credentials
+- Check Serial Monitor for error codes
 
-### MQTT не подключается
-- Проверьте что брокер работает: `systemctl status mosquitto`
-- Убедитесь в правильности IP адреса и учетных данных
-- Смотрите Serial Monitor для кодов ошибок
+## 📚 Based On
 
-## 📚 Документация
+Project based on [GyverFeed2](https://github.com/AlexGyver/GyverFeed2) by [AlexGyver](https://alexgyver.ru/gyverfeed2/)
 
-| Файл | Описание |
-|------|----------|
-| [README.md](README.md) | Основная документация (этот файл) |
-| [SETUP_INSTRUCTIONS.md](SETUP_INSTRUCTIONS.md) | Подробная инструкция по настройке |
-| [OTA_INSTRUCTIONS.md](OTA_INSTRUCTIONS.md) | Обновление по воздуху |
-| [SPIFFS_UPLOAD.md](SPIFFS_UPLOAD.md) | Загрузка файловой системы |
-| [REFACTORING_GUIDE.md](REFACTORING_GUIDE.md) | Быстрый старт после рефакторинга |
-| [MQTT_UPTIME_V2.md](MQTT_UPTIME_V2.md) | **NEW!** Улучшенный мониторинг через uptime (v3.1.1) |
-| [MQTT_INTEGRATION.md](MQTT_INTEGRATION.md) | Полная документация MQTT |
-| [MQTT_QUICKSTART.md](MQTT_QUICKSTART.md) | MQTT быстрый старт |
-| [UPGRADE_TO_V3.1.1.md](UPGRADE_TO_V3.1.1.md) | Миграция с heartbeat на uptime v2 |
-| [CHANGELOG.md](CHANGELOG.md) | История изменений |
+## 📝 License
 
-## 📚 Основано на проекте
+This project is distributed under the MIT license. See [LICENSE](LICENSE) file for details.
 
-Проект основан на [GyverFeed2](https://github.com/AlexGyver/GyverFeed2) от [AlexGyver](https://alexgyver.ru/gyverfeed2/)
+## 🤝 Contributing
 
-## 📝 Лицензия
+Contributions are welcome! Feel free to open issues or pull requests.
 
-Этот проект распространяется под лицензией MIT. См. файл [LICENSE](LICENSE) для подробностей.
+## 📧 Contact
 
-## 🤝 Вклад в проект
-
-Вклад в проект приветствуется! Не стесняйтесь открывать issues или pull requests.
-
-## 📧 Контакты
-
-Если у вас есть вопросы или предложения, создайте issue в репозитории.
+If you have questions or suggestions, create an issue in the repository.
 
 ---
 
-**⭐ Если проект вам понравился, поставьте звезду на GitHub!**
+**⭐ If you like this project, give it a star on GitHub!**

@@ -1,0 +1,60 @@
+# Lovelace Card для кормушки ESP32 v3.2
+# Карточка для Home Assistant
+
+type: vertical-stack
+cards:
+  - type: glance
+    title: 🐱 Кормушка для кота
+    show_name: true
+    show_state: true
+    state_color: true
+    entities:
+      - entity: binary_sensor.kormushka_dlia_kota_kormushka_onlain
+        name: Статус
+      - entity: sensor.kormushka_dlia_kota_vremia_zagruzki
+        name: Загрузка
+        format: relative
+  - type: entities
+    entities:
+      - entity: sensor.kormushka_dlia_kota_poslednee_kormlenie
+        name: Кормление
+        icon: mdi:food-drumstick
+        format: relative
+      - type: attribute
+        entity: sensor.kormushka_dlia_kota_poslednee_kormlenie
+        attribute: amount
+        name: Последняя порция
+        icon: mdi:counter
+        suffix: " оборотов"
+      - type: attribute
+        entity: sensor.kormushka_dlia_kota_poslednee_kormlenie
+        attribute: source
+        name: Источник
+        icon: mdi:source-branch
+    show_header_toggle: false
+  - type: horizontal-stack
+    cards:
+      - type: button
+        entity: button.kormushka_dlia_kota_pokormit_kota
+        name: Покормить (10)
+        icon: mdi:cat
+        icon_height: 50px
+        tap_action:
+          action: call-service
+          service: mqtt.publish
+          data:
+            topic: homeassistant/button/feeder/feed/set
+            payload: "10"
+        show_state: false
+      - type: button
+        entity: button.kormushka_dlia_kota_pokormit_kota
+        name: Покормить (20)
+        icon: mdi:cat
+        icon_height: 50px
+        tap_action:
+          action: call-service
+          service: mqtt.publish
+          data:
+            topic: homeassistant/button/feeder/feed/set
+            payload: "20"
+        show_state: false

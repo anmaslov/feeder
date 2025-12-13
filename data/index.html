@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=device-width,initial-scale=1'>
+    <title>Кормушка</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 95%;
+            width: 500px;
+            margin: 20px auto;
+            padding: 10px;
+            background: #f0f0f0;
+        }
+        .card {
+            background: #fff;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .btn {
+            background: #4CAF50;
+            color: #fff;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .btn:hover {
+            background: #45a049;
+        }
+        input[type='number'], input[type='time'] {
+            padding: 8px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        h3 {
+            margin-top: 0;
+            color: #555;
+        }
+        .schedule-item {
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .schedule-item:last-child {
+            border-bottom: none;
+        }
+        label {
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🐱 Кормушка</h1>
+    
+    <!-- Время -->
+    <div class='card'>
+        <h3>⏰ Время: <span id='time'>загрузка...</span></h3>
+    </div>
+    
+    <!-- Ручное кормление -->
+    <div class='card'>
+        <h3>🍽️ Кормление</h3>
+        <div>
+            Порция: <input type='number' id='amt' value='15' min='1' max='500'>
+            <button class='btn' onclick='feed()'>Покормить сейчас</button>
+        </div>
+    </div>
+    
+    <!-- Расписание -->
+    <div class='card'>
+        <h3>📅 Расписание кормления</h3>
+        <div id='sch'>Загрузка...</div>
+        <button class='btn' onclick='save()'>💾 Сохранить расписание</button>
+    </div>
+
+    <script>
+        // Ручное кормление
+        function feed() {
+            const amount = document.getElementById('amt').value;
+            fetch('/api/feed?amount=' + amount)
+                .then(() => alert('✅ Кормление запущено!'))
+                .catch(() => alert('❌ Ошибка подключения'));
+        }
+
+        // Загрузка расписания
+        function load() {
+            fetch('/api/schedules')
+                .then(r => r.json())
+                .then(d => {
+                    let html = '';
+                    for (let i = 0; i < 5; i++) {
+                        let s = d.schedules[i];
+                        let timeVal = String(s.hour).padStart(2, '0') + ':' + String(s.minute).padStart(2, '0');
+                        html += `<div class='schedule-item'>`;
+                        html += `<strong>#${i + 1}:</strong> `;
+                        html += `<input type='time' id='t${i}' value='${timeVal}'> `;
+                        html += `<input type='number' id='a${i}' value='${s.amount}' min='1' max='500' style='width:70px'> об. `;
+                        html += `<label><input type='checkbox' id='e${i}' ${s.enabled ? 'checked' : ''}> Включено</label>`;
+                        html += `</div>`;
+                    }
+                    document.getElementById('sch').innerHTML = html;
+                })
+                .catch(() => {
+                    document.getElementById('sch').innerHTML = '❌ Ошибка загрузки';
+                });
+        }
+
+        // Сохранение расписания
+        function save() {
+            let schedules = [];
+            for (let i = 0; i < 5; i++) {
+                let time = document.getElementById('t' + i).value.split(':');
+                schedules.push({
+                    hour: parseInt(time[0]),
+                    minute: parseInt(time[1]),
+                    amount: parseInt(document.getElementById('a' + i).value),
+                    enabled: document.getElementById('e' + i).checked
+                });
+            }
+            
+            fetch('/api/schedules', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({schedules: schedules})
+            })
+                .then(() => alert('✅ Расписание сохранено!'))
+                .catch(() => alert('❌ Ошибка сохранения'));
+        }
+
+        // Обновление времени
+        function updateTime() {
+            fetch('/api/time')
+                .then(r => r.json())
+                .then(d => {
+                    document.getElementById('time').textContent = d.time;
+                })
+                .catch(() => {
+                    document.getElementById('time').textContent = '❌ нет связи';
+                });
+        }
+
+        // Инициализация
+        setInterval(updateTime, 5000);  // Обновление времени каждые 5 секунд
+        updateTime();
+        load();
+    </script>
+</body>
+</html>

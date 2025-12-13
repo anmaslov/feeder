@@ -1,0 +1,10 @@
+{
+  "wifi_ssid": "YOUR_WIFI_SSID",
+  "wifi_password": "YOUR_WIFI_PASSWORD",
+  "feedAmount": 100,
+  "schedules": [
+    {"hour": 8, "minute": 0, "amount": 100, "enabled": true},
+    {"hour": 14, "minute": 0, "amount": 100, "enabled": true},
+    {"hour": 20, "minute": 0, "amount": 100, "enabled": true}
+  ]
+}

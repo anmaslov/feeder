@@ -35,3 +35,4 @@ secrets.h
 
 # Игнорируем файлы отладки
 debug/
+.github/

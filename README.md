@@ -1,11 +1,12 @@
 # 🐾 ESP32-CAM Pet Feeder
 
-Smart automatic pet feeder based on ESP32-CAM with web interface, scheduling, MQTT integration, and OTA updates.
+Smart automatic pet feeder based on ESP32-CAM with web interface, scheduling, MQTT integration with Home Assistant Auto Discovery, and OTA updates.
 
 ![ESP32-CAM](https://img.shields.io/badge/ESP32-CAM-blue)
 ![PlatformIO](https://img.shields.io/badge/PlatformIO-Compatible-orange)
 ![License](https://img.shields.io/badge/license-MIT-green)
-![MQTT](https://img.shields.io/badge/MQTT-Integrated-green)
+![MQTT](https://img.shields.io/badge/MQTT-Home_Assistant-green)
+![Version](https://img.shields.io/badge/version-3.2.0-blue)
 
 🇷🇺 [Русская версия](README_RU.md)
 
@@ -13,21 +14,22 @@ Smart automatic pet feeder based on ESP32-CAM with web interface, scheduling, MQ
 
 ### Core Functions:
 - ✅ **Button Control**: short press to feed, long press for calibration
-- ✅ **RGB LED Indication**: WS2812B strip (2 LEDs) with animations
-- ✅ **Settings Storage**: all parameters saved in non-volatile memory
+- ✅ **RGB LED Indication**: WS2812B strip (2 LEDs) with status animations
+- ✅ **Settings Storage**: all parameters saved in non-volatile memory (Preferences)
 - ✅ **WiFi Connection**: automatic connection to home network
-- ✅ **Web Interface**: browser-based control
+- ✅ **Web Interface**: browser-based control with schedule management
 - ✅ **Scheduling**: up to 5 automatic feedings per day
-- ✅ **NTP Sync**: accurate time from the internet
+- ✅ **NTP Sync**: accurate time synchronization from the internet
 - ✅ **OTA Updates**: over-the-air firmware updates
-- ✅ **MQTT Integration**: logs, control, monitoring
+- ✅ **MQTT Integration**: Home Assistant Auto Discovery support
 
 ### MQTT Features:
-- 📡 **Remote Logs**: all debugging via MQTT
-- 📊 **Smart Monitoring**: uptime + date/time in one message (every minute)
-- 🎮 **Remote Feeding**: commands via MQTT
-- 📱 **Home Assistant**: full integration with binary sensor
-- 🔔 **Real-time Status**: JSON with feeding information
+- 📡 **Auto Discovery**: automatic device registration in Home Assistant
+- 📊 **Boot Time Sensor**: timestamp of last device boot
+- 🎮 **Remote Feeding**: feed command via MQTT button
+- 📱 **Home Assistant**: full integration with sensors and buttons
+- 🔔 **Last Feeding Sensor**: JSON with timestamp, amount, and source
+- ✅ **Availability**: online/offline binary sensor with Last Will
 
 ## 🛠 Components
 
@@ -78,12 +80,7 @@ cd feeder
 ```
 
 ### 2. Configuration
-Copy the example file and fill in your data:
-```bash
-cp .env.example .env
-```
-
-Edit the `.env` file:
+Create `.env` file with your settings:
 ```bash
 # WiFi
 WIFI_SSID=your_wifi_ssid
@@ -97,11 +94,12 @@ MQTT_PASSWORD=mqtt_password
 
 # OTA
 ESP_IP=192.168.1.100
+OTA_HOSTNAME=ESP32-Feeder
 ```
 
 ### 3. USB Upload
 ```bash
-# Uncomment USB upload in platformio.ini if using cable
+# Comment out OTA upload in platformio.ini for USB upload
 platformio run --target upload
 ```
 
@@ -121,35 +119,41 @@ platformio run --target upload --upload-port ESP_IP_FROM_ENV
 
 | Indication | Meaning |
 |------------|---------|
-| 3 blinks at startup | Board loaded |
-| 5 fast blinks | WiFi connected |
-| LED constantly on | Feeding or calibration in progress |
-| 2 fast blinks | Settings saved |
-| Blinking during OTA | Firmware update in progress |
+| 3 blue/red blinks at startup | Board loaded |
+| Yellow blinking | WiFi connecting |
+| Green LEDs (1 sec) | WiFi connected |
+| Red LEDs (2 sec) | WiFi connection failed |
+| Rainbow animation | Feeding in progress |
+| Purple LEDs | OTA update in progress |
+| Short green flash (every 30s) | System OK |
+| Short blue flash (every 10s) | WiFi issue |
+| Short red flash (every 3s) | Error |
 
 ### Button Control
 
 #### Short Press (< 0.5 sec)
 - Starts feeding process
 - Motor dispenses saved portion
-- LED on during operation
+- Rainbow LED animation during operation
 
 #### Long Press (> 0.5 sec)
 - Starts portion calibration
-- LED turns on
+- Green LEDs turn on
 - Motor runs while button held
 - Release when desired amount dispensed
 - New portion size automatically saved
-- 2 fast blinks confirm save
 
 ## 🔧 Parameter Settings
 
-In `src/main.cpp` you can modify:
+In `include/config.h` you can modify:
 
 ```cpp
-#define FEED_SPEED 3000     // Motor speed (µs between steps)
-#define STEPS_FRW 19        // Steps forward
-#define STEPS_BKW 12        // Steps backward (prevents jamming)
+#define FEED_SPEED 3000         // Motor speed (µs between steps)
+#define STEPS_FRW 19            // Steps forward
+#define STEPS_BKW 12            // Steps backward (prevents jamming)
+#define DEFAULT_FEED_AMOUNT 15  // Default portion (revolutions)
+#define MAX_SCHEDULES 5         // Maximum number of schedules
+#define LED_BRIGHTNESS 50       // LED brightness (0-255)
 ```
 
 ## 📁 Project Structure
@@ -157,14 +161,14 @@ In `src/main.cpp` you can modify:
 ```
 feeder/
 ├── src/
-│   ├── main.cpp           # Main code
-│   ├── feeder.cpp         # Motor and LED control
-│   ├── schedule.cpp       # Schedule logic
-│   ├── mqtt_handler.cpp   # MQTT client
-│   ├── web_server.cpp     # HTTP API
+│   ├── main.cpp           # Main code, setup and loop
+│   ├── feeder.cpp         # Motor control, LED effects, feeding
+│   ├── schedule.cpp       # Schedule logic and settings storage
+│   ├── mqtt_handler.cpp   # MQTT client with Auto Discovery
+│   ├── web_server.cpp     # HTTP API and web interface
 │   └── SimpleButton.h     # Button library
 ├── include/
-│   ├── config.h           # Configuration (pins, timers)
+│   ├── config.h           # Configuration (pins, timers, MQTT topics)
 │   ├── feeder.h           # Feeder header
 │   ├── schedule.h         # Schedule header
 │   ├── mqtt_handler.h     # MQTT header
@@ -172,102 +176,156 @@ feeder/
 ├── data/
 │   ├── config.json        # Settings (schedule, portions)
 │   └── index.html         # Web interface
-├── .env.example           # Environment variables example
-├── load_env.py            # .env loading script
+├── load_env.py            # .env loading script for PlatformIO
 ├── platformio.ini         # PlatformIO configuration
-├── LOVELACE_CARD.yaml     # Home Assistant card
-├── .gitignore
+├── LOVELACE_CARD.yaml     # Home Assistant Lovelace card example
 ├── LICENSE
-└── README.md
+├── README.md              # English documentation
+└── README_RU.md           # Russian documentation
 ```
+
+## 🌐 Web Interface
+
+Access the web interface at `http://<ESP_IP>/` to:
+- View current time (NTP synchronized)
+- Manually trigger feeding with custom portion
+- Configure up to 5 scheduled feedings
+- Enable/disable individual schedules
+
+### API Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/` | GET | Web interface |
+| `/api/time` | GET | Current time |
+| `/api/schedules` | GET | Get all schedules |
+| `/api/schedules` | POST | Save schedules |
+| `/api/feed?amount=N` | GET | Trigger feeding |
+| `/api/toggle?id=N` | GET | Toggle schedule on/off |
+| `/api/setbase?amount=N` | GET | Set base portion |
 
 ## 🌐 OTA Update
 
 ### Via PlatformIO
-Add to `platformio.ini`:
+Settings in `platformio.ini`:
 ```ini
 upload_protocol = espota
-upload_port = feeder-cam.local
+; upload_port is set automatically from .env via load_env.py
 ```
 
 ### Via Arduino IDE
 1. Menu: Tools → Port
-2. Select `feeder-cam at 192.168.x.x`
+2. Select `ESP32-Feeder at 192.168.x.x`
 3. Upload sketch
-
-### With Password (optional)
-Uncomment in `main.cpp`:
-```cpp
-ArduinoOTA.setPassword("admin");
-```
 
 ## 🔍 Debugging
 
 Connect to Serial Monitor (115200 baud) to view logs:
 ```
-ESP32-CAM Pet Feeder ready!
-Loaded portion: 100
-Connecting to WiFi.....
-WiFi connected!
-IP address: 192.168.x.x
-OTA ready
-MQTT connected
-Hostname: feeder-cam
+===========================================
+  ESP32-CAM Автокормушка v3.2
+===========================================
+
+[OK] LED лента инициализирована
+[OK] Пины драйвера настроены
+[OK] Расписание инициализировано
+[OK] WiFi подключен!
+     IP: 192.168.x.x
+[OK] Время: 16.12.2025 14:30:00
+[OK] OTA готов
+[MQTT] Настроен
+[MQTT] Подключение... OK!
+[DISCOVERY] Отправка конфигурации...
+[DISCOVERY] Готово!
+[OK] Web-сервер запущен на порту 80
+
+===========================================
+  СИСТЕМА ГОТОВА!
+  http://192.168.x.x
+===========================================
 ```
 
 ## 📡 MQTT Integration
 
-### Quick Start:
+### Auto Discovery
 
-Feeder automatically connects to MQTT broker (settings from `.env`):
-- **Server:** `your_mqtt_server:1883`
-- **Login/password:** from `.env` file
+The feeder automatically registers itself in Home Assistant via MQTT Auto Discovery. No manual configuration needed!
 
-### Topics:
+### MQTT Topics
 
 | Topic | Type | Description |
 |-------|------|-------------|
-| `feeder/logs` | Publish | All logs and debugging |
-| `feeder/uptime` | Publish | Uptime + date/time (every minute) |
-| `feeder/feed` | Subscribe | Feed command |
-| `feeder/status` | Publish | Feeding status (JSON) |
-| `feeder/availability` | Publish | online/offline (deprecated) |
+| `homeassistant/binary_sensor/feeder/availability/state` | Publish | online/offline status |
+| `homeassistant/sensor/feeder/boot_time/state` | Publish | ISO timestamp of last boot |
+| `homeassistant/sensor/feeder/last_feeding/state` | Publish | Last feeding JSON |
+| `homeassistant/button/feeder/feed/set` | Subscribe | Feed command |
 
-> **New in v3.1.1:** Topic `feeder/uptime` now includes date and time of last send!  
-> Format: `Uptime: 0 days 1:23:45 | Last: 07.12.2025 14:30:15`
-
-### Command Examples:
-
-```bash
-# View logs
-mosquitto_sub -h YOUR_MQTT_SERVER -u YOUR_USER -P YOUR_PASSWORD -t "feeder/logs"
-
-# View uptime with date/time
-mosquitto_sub -h YOUR_MQTT_SERVER -u YOUR_USER -P YOUR_PASSWORD -t "feeder/uptime"
-
-# Feed
-mosquitto_pub -h YOUR_MQTT_SERVER -u YOUR_USER -P YOUR_PASSWORD -t "feeder/feed" -m "100"
-
-# Check online (by uptime)
-mosquitto_sub -h YOUR_MQTT_SERVER -u YOUR_USER -P YOUR_PASSWORD -t "feeder/uptime" -C 1 -W 150
+### Last Feeding JSON Format
+```json
+{
+  "timestamp": "2025-12-16T14:30:00+03:00",
+  "amount": 15,
+  "source": "button"  // or "mqtt", "web", "schedule"
+}
 ```
 
-### Home Assistant (v3.1.1):
+### Entities Created in Home Assistant
+
+| Entity | Type | Description |
+|--------|------|-------------|
+| `binary_sensor.kormushka_dlia_kota_kormushka_onlain` | Binary Sensor | Online/offline status |
+| `sensor.kormushka_dlia_kota_vremia_zagruzki` | Sensor | Boot timestamp |
+| `sensor.kormushka_dlia_kota_poslednee_kormlenie` | Sensor | Last feeding with attributes |
+| `button.kormushka_dlia_kota_pokormit_kota` | Button | Feed command |
+
+### Manual MQTT Commands
+
+```bash
+# Feed with custom amount
+mosquitto_pub -h YOUR_MQTT_SERVER -u YOUR_USER -P YOUR_PASSWORD \
+  -t "homeassistant/button/feeder/feed/set" -m "20"
+
+# Subscribe to last feeding
+mosquitto_sub -h YOUR_MQTT_SERVER -u YOUR_USER -P YOUR_PASSWORD \
+  -t "homeassistant/sensor/feeder/last_feeding/state"
+```
+
+## 🏠 Home Assistant Lovelace Card
+
+Example card configuration in `LOVELACE_CARD.yaml`:
 
 ```yaml
-binary_sensor:
-  - platform: mqtt
-    name: "Feeder Online"
-    state_topic: "feeder/uptime"
-    payload_on: "Uptime"
-    device_class: connectivity
-    expire_after: 150  # Offline if no message for 2.5 minutes
-
-mqtt:
-  button:
-    - name: "Feed Cat"
-      command_topic: "feeder/feed"
-      payload_press: "15"
+type: vertical-stack
+cards:
+  - type: glance
+    title: 🐱 Cat Feeder
+    entities:
+      - entity: binary_sensor.kormushka_dlia_kota_kormushka_onlain
+        name: Status
+      - entity: sensor.kormushka_dlia_kota_vremia_zagruzki
+        name: Boot
+        format: relative
+  - type: entities
+    entities:
+      - entity: sensor.kormushka_dlia_kota_poslednee_kormlenie
+        name: Last Feeding
+        format: relative
+      - type: attribute
+        entity: sensor.kormushka_dlia_kota_poslednee_kormlenie
+        attribute: amount
+        name: Portion
+        suffix: " revolutions"
+  - type: horizontal-stack
+    cards:
+      - type: button
+        entity: button.kormushka_dlia_kota_pokormit_kota
+        name: Feed (10)
+        tap_action:
+          action: call-service
+          service: mqtt.publish
+          data:
+            topic: homeassistant/button/feeder/feed/set
+            payload: "10"
 ```
 
 ## 🐛 Troubleshooting
@@ -282,9 +340,10 @@ mqtt:
 - Ensure router supports 2.4 GHz (ESP32 doesn't work with 5GHz)
 - Check WiFi signal strength
 
-### LED doesn't blink
-- GPIO 4 may conflict with SD card
-- Try changing `LED_PIN` to 33 (built-in LED)
+### LED doesn't work
+- Check GPIO 16 connection
+- Verify 5V power to LED strip
+- Check `NUM_LEDS` setting in config.h
 
 ### OTA doesn't work
 - Ensure ESP32 and computer are on same network
@@ -295,6 +354,12 @@ mqtt:
 - Check broker is running: `systemctl status mosquitto`
 - Verify IP address and credentials
 - Check Serial Monitor for error codes
+- Ensure MQTT user has permissions for homeassistant/# topics
+
+### Home Assistant doesn't show entities
+- Check MQTT integration is configured
+- Look for entities with "kormushka" in the name
+- Check MQTT broker logs for discovery messages
 
 ## 📚 Based On
 

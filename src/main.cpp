@@ -17,6 +17,7 @@
 
 #include "SimpleButton.h"
 #include "config.h"
+#include "led_status.h"
 #include "feeder.h"
 #include "schedule.h"
 #include "mqtt_handler.h"
@@ -25,6 +26,13 @@
 // ==================== ПЕРЕМЕННЫЕ ====================
 SimpleButton btn(BTN_PIN);
 bool wifiConnected = false;
+bool wifiServicesInitialized = false;  // Флаг: сервисы (NTP, OTA, MQTT, WebServer) инициализированы
+unsigned long lastWifiReconnect = 0;
+#define WIFI_RECONNECT_INTERVAL 10000  // Интервал между попытками переподключения (мс)
+
+// Forward-объявления
+void ntpSetup();
+void otaSetup();
 
 // ==================== WiFi ====================
 void wifiSetup() {
@@ -35,18 +43,17 @@ void wifiSetup() {
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   
   // Индикация подключения
-  leds[0] = CRGB::Yellow;
-  leds[1] = CRGB::Yellow;
-  FastLED.show();
+  ledSetColor(CRGB::Yellow);
   
   int attempts = 0;
   while (WiFi.status() != WL_CONNECTED && attempts < 40) {
     delay(500);
     attempts++;
     Serial.print(".");
-    leds[0] = (attempts % 2) ? CRGB::Yellow : CRGB::Black;
-    leds[1] = (attempts % 2) ? CRGB::Black : CRGB::Yellow;
-    FastLED.show();
+    ledSetColors(
+      (attempts % 2) ? CRGB::Yellow : CRGB::Black,
+      (attempts % 2) ? CRGB::Black : CRGB::Yellow
+    );
   }
   
   Serial.println();
@@ -57,22 +64,57 @@ void wifiSetup() {
     Serial.printf("     IP: %s\n", WiFi.localIP().toString().c_str());
     Serial.printf("     MAC: %s\n", WiFi.macAddress().c_str());
     
-    leds[0] = CRGB::Green;
-    leds[1] = CRGB::Green;
-    FastLED.show();
+    ledSetColor(CRGB::Green);
     delay(1000);
   } else {
     Serial.println("[ОШИБКА] WiFi не подключен!");
     Serial.println("  Проверьте SSID и пароль в config.h");
     
-    leds[0] = CRGB::Red;
-    leds[1] = CRGB::Red;
-    FastLED.show();
+    ledSetColor(CRGB::Red);
     delay(2000);
   }
   
-  FastLED.clear();
-  FastLED.show();
+  ledClear();
+}
+
+// ==================== WiFi Reconnect ====================
+void wifiReconnect() {
+  if (millis() - lastWifiReconnect < WIFI_RECONNECT_INTERVAL) return;
+  lastWifiReconnect = millis();
+
+  Serial.println("[WIFI] Соединение потеряно, переподключение...");
+  WiFi.disconnect();
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+
+  int attempts = 0;
+  while (WiFi.status() != WL_CONNECTED && attempts < 10) {
+    delay(500);
+    attempts++;
+  }
+
+  if (WiFi.status() == WL_CONNECTED) {
+    wifiConnected = true;
+    Serial.printf("[OK] WiFi переподключен! IP: %s\n", WiFi.localIP().toString().c_str());
+  } else {
+    Serial.println("[WARN] WiFi не удалось переподключить");
+  }
+}
+
+// Инициализация WiFi-зависимых сервисов (вызывается один раз при первом подключении)
+void initWifiServices() {
+  if (wifiServicesInitialized) return;
+
+  Serial.println("[INIT] Инициализация Wi-Fi сервисов...");
+  ntpSetup();
+  otaSetup();
+  mqttSetup();
+  webServerSetup();
+  wifiServicesInitialized = true;
+
+  Serial.println("\n===========================================");
+  Serial.println("  СИСТЕМА ГОТОВА!");
+  Serial.printf("  http://%s\n", WiFi.localIP().toString().c_str());
+  Serial.println("===========================================\n");
 }
 
 // ==================== NTP ====================
@@ -98,9 +140,7 @@ void otaSetup() {
   
   ArduinoOTA.onStart([]() {
     Serial.println("[OTA] Начало обновления...");
-    leds[0] = CRGB::Purple;
-    leds[1] = CRGB::Purple;
-    FastLED.show();
+    ledSetColor(CRGB::Purple);
   });
   
   ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
@@ -109,9 +149,7 @@ void otaSetup() {
   
   ArduinoOTA.onEnd([]() {
     Serial.println("\n[OTA] Готово!");
-    leds[0] = CRGB::Green;
-    leds[1] = CRGB::Green;
-    FastLED.show();
+    ledSetColor(CRGB::Green);
   });
   
   ArduinoOTA.onError([](ota_error_t error) {
@@ -133,7 +171,7 @@ void setup() {
   
   // 1. Инициализация оборудования
   feederSetup();
-  flashLights();
+  ledFlashStartup();
   
   // 2. Загрузка настроек
   scheduleSetup();
@@ -142,22 +180,7 @@ void setup() {
   wifiSetup();
   
   if (wifiConnected) {
-    // 4. NTP
-    ntpSetup();
-    
-    // 5. OTA
-    otaSetup();
-    
-    // 6. MQTT
-    mqttSetup();
-    
-    // 7. Веб-сервер
-    webServerSetup();
-    
-    Serial.println("\n===========================================");
-    Serial.println("  СИСТЕМА ГОТОВА!");
-    Serial.printf("  http://%s\n", WiFi.localIP().toString().c_str());
-    Serial.println("===========================================\n");
+    initWifiServices();
   }
 }
 
@@ -166,19 +189,20 @@ void loop() {
   delay(10);
   btn.tick();
   
-  // Определяем статус системы для индикации
-  SystemStatus currentStatus;
-  if (WiFi.status() != WL_CONNECTED) {
-    currentStatus = STATUS_WIFI_ISSUE;
-  } else {
-    currentStatus = STATUS_OK;
+  // Актуализируем состояние Wi-Fi
+  wifiConnected = (WiFi.status() == WL_CONNECTED);
+
+  // Переподключение при потере связи
+  if (!wifiConnected) {
+    wifiReconnect();
   }
+
+  // Индикация состояния
+  ledUpdateStatus(wifiConnected ? STATUS_OK : STATUS_WIFI_ISSUE);
   
-  // Обновляем индикацию состояния (мигание маяком)
-  updateStatusLed(currentStatus);
-  
-  // WiFi-зависимые задачи
+  // Инициализация сервисов при первом успешном подключении
   if (wifiConnected) {
+    initWifiServices();
     // MQTT
     mqttLoop();
     
@@ -218,9 +242,7 @@ void loop() {
     Serial.println("[BTN] Калибровка");
     int newAmount = 0;
     
-    leds[0] = CRGB::Green;
-    leds[1] = CRGB::Green;
-    FastLED.show();
+    ledSetColor(CRGB::Green);
     
     while (btn.isHold()) {
       btn.tick();
@@ -232,8 +254,7 @@ void loop() {
     }
     
     disableMotor();
-    FastLED.clear();
-    FastLED.show();
+    ledClear();
     
     feedAmount = newAmount;
     saveSettings();
